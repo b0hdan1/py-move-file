@@ -7,27 +7,29 @@ def move_file(command: str) -> None:
     if len(command_elements) != 3 or command_elements[0] != "mv":
         return
 
-    if "/" not in command_elements[2]:
-        os.rename(command_elements[1], command_elements[2])
+    _, source, destination = command_elements
+
+    if "/" not in destination:
+        os.rename(source, destination)
         return
 
+    directories = destination.split("/")
+    new_file_name = source
+    if directories[-1]:
+        new_file_name = directories.pop(-1)
     else:
-        directories = command_elements[2].split("/")
-        new_file_name = command_elements[1]
-        if directories[-1]:
-            new_file_name = directories.pop(-1)
-        else:
-            del directories[-1]
+        directories.pop(-1)
 
-        checked_path = ""
-        for dir_name in directories:
-            checked_path += dir_name + "/"
-            if not os.path.exists(checked_path):
-                os.mkdir(checked_path)
-        checked_path += new_file_name
+    checked_path = ""
+    for dir_name in directories:
+        checked_path = os.path.join(checked_path, dir_name)
+        if not os.path.exists(checked_path):
+            os.mkdir(checked_path)
 
-        with (open(command_elements[1], "r") as file_in,
-              open(checked_path, "w") as file_out):
-            file_out.write(file_in.read())
+    final_destination = os.path.join(checked_path, new_file_name)
 
-        os.remove(command_elements[1])
+    with (open(source, "r") as file_in,
+          open(final_destination, "w") as file_out):
+        file_out.write(file_in.read())
+
+    os.remove(source)
